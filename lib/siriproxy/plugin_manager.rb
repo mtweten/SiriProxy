@@ -12,26 +12,26 @@ class SiriProxy::PluginManager < Cora
     @plugins = []
     if $APP_CONFIG.plugins
       $APP_CONFIG.plugins.each do |pluginConfig|
-          begin
-            if pluginConfig.is_a? String
-              className = pluginConfig
-              requireName = "siriproxy-#{className.downcase}"
-            else
-              className = pluginConfig['name']
-              requireName = pluginConfig['require'] || "siriproxy-#{className.downcase}"
-            end
-            require requireName
-            plugin = SiriProxy::Plugin.const_get(className).new(pluginConfig)
-            plugin.plugin_name = className
-            plugin.manager = self
-            @plugins << plugin
-          rescue
-            if pluginConfig['name']
-              puts "[Error] Failed to load plugin: #{pluginConfig['name']}"
-            else
-              puts "[Error] Failed to load a plugin that has no name, check your config.yml"
-            end 
+        begin
+          if pluginConfig.is_a? String
+            className = pluginConfig
+            requireName = "siriproxy-#{className.downcase}"
+          else
+            className = pluginConfig['name']
+            requireName = pluginConfig['require'] || "siriproxy-#{className.downcase}"
           end
+          require requireName
+          plugin = SiriProxy::Plugin.const_get(className).new(pluginConfig)
+          plugin.plugin_name = className
+          plugin.manager = self
+          @plugins << plugin
+        rescue
+          if pluginConfig['name']
+            puts "[Error] Failed to load plugin: #{pluginConfig['name']}"
+          else
+            puts "[Error] Failed to load a plugin that has no name, check your config.yml"
+          end
+        end
       end
     end
     log "Plugins loaded: #{@plugins.join(', ')}"
@@ -48,11 +48,11 @@ class SiriProxy::PluginManager < Cora
     plugins.each do |plugin|
       #log "Processing filters on #{plugin} for '#{object["class"]}'"
       new_obj = plugin.process_filters(object, direction)
-      object = new_obj if(new_obj == false || new_obj.class == object_class) #prevent accidental poorly formed returns
+      object = new_obj if (new_obj == false || new_obj.class == object_class) #prevent accidental poorly formed returns
       return nil if object == false #if any filter returns "false," then the object should be dropped
     end
 
-    return object
+    object
   end
 
   def process(text)
@@ -60,12 +60,13 @@ class SiriProxy::PluginManager < Cora
       result = super(text)
       self.guzzoni_conn.block_rest_of_session if result
       return result
-    rescue Exception=>e
+    rescue Exception => e
       log "Plugin Crashed: #{e}"
       respond e.to_s, spoken: "a plugin crashed"
       return true
-    end  
+    end
   end
+
 
   def send_request_complete_to_iphone
     log "Sending Request Completed"
@@ -74,7 +75,15 @@ class SiriProxy::PluginManager < Cora
   end
 
   def respond(text, options={})
-    self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response] == true))
+    # I think here is where stuff will happen for options?
+
+    list_options = options[:list_options]
+    if list_options.nil?
+      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response] == true))
+    else
+      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_disambiguation_question(self.guzzoni_conn.last_ref_id, text, list_options))
+    end
+
   end
 
   def no_matches

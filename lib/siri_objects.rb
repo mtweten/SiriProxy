@@ -1,6 +1,50 @@
 require 'rubygems'
 require 'uuidtools'
 
+def generate_siri_disambiguation_question(ref_id, text, list_options)
+  object = SiriAddViews.new
+  object.make_root(ref_id)
+  disambiguation_list = SiriDisambiguationList.new
+
+  list_options.each do |option|
+    disambiguation_list.items << generate_list_item(option[:title], option[:speakableText] || '', option[:selectionText], option[:speakableSelectionText])
+  end
+
+  # generate_siri_utterance? need to understand more stuff....
+  utterance = SiriAssistantUtteranceView.new(text, text, "Misc#ident", true)
+
+  object.views << utterance
+  object.views << disambiguation_list
+
+  object.to_hash
+end
+
+def generate_list_item(title, speakableText=text, selectionText, speakableSelectionText)
+  SiriListItem.new(title, speakableText, [
+      {
+          "class" => 'AddViews',
+          "properties" => {
+              "temporary" => false,
+              "dialogPhase" => 'Summary',
+              "scrollToTop" => false,
+              "views" => [
+                  {
+                      "class" => 'AssistantUtteranceView',
+                      "properties" => {
+                          "text" => selectionText,
+                          "speakableText" => speakableSelectionText,
+                          "dialogIdentifier" => 'Misc#ident',
+                      },
+                      "group" => 'com.apple.ace.assistant'
+                  }
+              ]
+          },
+          "group" => 'com.apple.ace.assistant'
+      }
+  ]
+  )
+end
+
 def generate_siri_utterance(ref_id, text, speakableText=text, listenAfterSpeaking=false)
   object = SiriAddViews.new
   object.make_root(ref_id)
@@ -327,5 +371,31 @@ add_property_to_class(SiriSetRequestOrigin, :verticalAccuracy)
 add_property_to_class(SiriSetRequestOrigin, :direction)
 add_property_to_class(SiriSetRequestOrigin, :age)
 
+class SiriDisambiguationList < SiriObject
+  def initialize(speakableSelectionResponse="OK...", listenAfterSpeaking=true, speakableFinalDelimiter=", or ", speakableDelimiter=", ", items=[])
+    super("DisambiguationList", "com.apple.ace.assistant")
+    self.speakableSelectionResponse = speakableSelectionResponse
+    self.listenAfterSpeaking = listenAfterSpeaking
+    self.speakableFinalDelimiter = speakableFinalDelimiter
+    self.speakableDelimiter = speakableDelimiter
+    self.items = items
+  end
+end
+add_property_to_class(SiriDisambiguationList, :speakableSelectionResponse)
+add_property_to_class(SiriDisambiguationList, :listenAfterSpeaking)
+add_property_to_class(SiriDisambiguationList, :speakableFinalDelimiter)
+add_property_to_class(SiriDisambiguationList, :speakableDelimiter)
+add_property_to_class(SiriDisambiguationList, :items)
 
+class SiriListItem < SiriObject
+  def initialize(title="", speakableText="", commands=[])
+    super("ListItem", "com.apple.ace.assistant")
+    self.title = title
+    self.speakableText = speakableText
+    self.commands = commands
+  end
+end
+add_property_to_class(SiriListItem, :title)
+add_property_to_class(SiriListItem, :speakableText)
+add_property_to_class(SiriListItem, :commands)
 
