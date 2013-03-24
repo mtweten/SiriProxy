@@ -75,19 +75,17 @@ class SiriProxy::PluginManager < Cora
   end
 
   def respond(text, options={})
-    # I think here is where stuff will happen for options?
 
-    list_options = options[:list_options]
-    if list_options.nil?
-      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response] == true))
+    disambiguation_options = options[:disambiguation_options]
+    if disambiguation_options.nil?
+      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response]))
     else
-      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_disambiguation_question(self.guzzoni_conn.last_ref_id, text, list_options))
+      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_disambiguation_question(self.guzzoni_conn.last_ref_id, text, disambiguation_options))
     end
-
   end
 
   def no_matches
-    return false
+    false
   end
 
   def log(text)
