@@ -1,17 +1,17 @@
 require 'rubygems'
 require 'uuidtools'
 
-def generate_siri_disambiguation_question(ref_id, text, list_options)
+def generate_siri_disambiguation_question(ref_id, text, speakableText=text, disambiguation_options=[])
   object = SiriAddViews.new
   object.make_root(ref_id)
   disambiguation_list = SiriDisambiguationList.new
 
-  list_options.each do |option|
+  disambiguation_options.each do |option|
     disambiguation_list.items << generate_list_item(option[:title], option[:speakableText] || '', option[:selectionText], option[:speakableSelectionText])
   end
 
   # generate_siri_utterance? need to understand more stuff....
-  utterance = SiriAssistantUtteranceView.new(text, text, "Misc#ident", true)
+  utterance = SiriAssistantUtteranceView.new(text, speakableText, "Misc#ident", true)
 
   object.views << utterance
   object.views << disambiguation_list
