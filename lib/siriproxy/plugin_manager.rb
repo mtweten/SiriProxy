@@ -78,7 +78,7 @@ class SiriProxy::PluginManager < Cora
 
     disambiguation_options = options[:disambiguation_options]
     if disambiguation_options.nil?
-      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response]))
+      self.guzzoni_conn.inject_object_to_output_stream(generate_siri_utterance(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), options[:prompt_for_response] == true))
     else
       self.guzzoni_conn.inject_object_to_output_stream(generate_siri_disambiguation_question(self.guzzoni_conn.last_ref_id, text, (options[:spoken] or text), disambiguation_options))
     end
